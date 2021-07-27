@@ -1,10 +1,9 @@
 #include "../nncurses/nncurses.hpp"
 #include <unordered_map>
-#include <thread>
 #include <vector>
 
-using nc::Texture, nc::Effect, nc::Col256, nc::Style, nc::Terminal, nc::Screen, nc::TextLine, nc::TimeTracker, nc::Renderable, nc::TimeLimiter,nc::cinchr;
-using std::unordered_map, std::map, std::cout, std::pair, std::string, std::thread, std::vector, std::stoi, std::to_string;
+using nc::Texture, nc::Effect, nc::Col256, nc::Style, nc::Terminal, nc::Screen, nc::TextLine, nc::TimeTracker, nc::Renderable, nc::TimeLimiter,nc::cinchr,nc::gettermsize;
+using std::unordered_map, std::map, std::cout, std::pair, std::string, std::vector, std::stoi, std::to_string;
 
 class InfGrid{
 public:
@@ -37,14 +36,21 @@ public:
 	}
 };
 
-uint8_t* noeffectint=new uint8_t(0);
-Effect* noeffect=new Effect(noeffectint);
-
 template<class T>
 T toroid(T a, T b) {
 	int result = a % b;
 	return result >= 0 ? result : result + b;
 }
+
+short* black=new short(256);
+short* white=new short(252);
+
+uint8_t* noeffectint=new uint8_t(0);
+Effect* noeffect=new Effect(noeffectint);
+
+Col256* backgroundCol=new Col256(white,black);
+Style* backgroundStl=new Style(backgroundCol,noeffect);
+Texture* background=new Texture(new string(" "),backgroundStl);
 
 class LangBoard{
 public:
@@ -57,8 +63,7 @@ public:
 	vector< int8_t > rules;
 	vector< Texture* > chars;
 
-	short ant;
-	LangBoard(int8_t startDir,vector< int8_t > rules,short ant): antX(0), antY(0), direction(startDir), rules(rules), grid(0), ant(ant){}
+	LangBoard(int8_t startDir,vector< int8_t > rules): antX(0), antY(0), direction(startDir), rules(rules), grid(0){}
 
 	void step(){
 		steps++;
@@ -120,39 +125,49 @@ public:
 			}
 		}
 	}
-
 };
-
-short* black=new short(256);
-short* white=new short(252);
-
-Col256* backgroundCol=new Col256(white,black);
-Style* backgroundStl=new Style(backgroundCol,noeffect);
-Texture* background=new Texture(new string(" "),backgroundStl);
 
 string statsStr="";
 int statsX=0;
 int statsY=0;
 TextLine stats(&statsStr, white, noeffect, &statsX, &statsY);
-Terminal terminal(background);
 
-bool ended=false;
+long topX=0;
+long topY=0;
 
-int main(int argc, char *argv[]){
+unsigned long step=1;
+unsigned long move=1;
+
+int main(int argc, char *argv[]){ //1 1 -1 -1 -1 1 -1 -1 -1 1 1 1 nice
 	std::vector<std::string> arguments(argv + 1, argv + argc);
+
+	if ( arguments[0]=="-h" ){
+		cout << "run langton's ant by providing rules as arguments!\n"
+				"eg: langton 1 1 -1 -1 -1 1 -1 -1 -1 1 1 1\n"
+				"controls:\n"
+				"    q: quit\n"
+				"    w,a,s,d: move move tiles in a direction\n"
+				"    f: divide move by 2\n"
+				"    g: multiply move by 2\n"
+				"    c: step step steps\n"
+				"    e: divide step by 2\n"
+				"    r: multiply step by 2\n";
+		return 0;
+	}
+
 	vector< int8_t > rules;
 
 	for (int i=0;i<arguments.size();i++){
 		rules.push_back(stoi(arguments[i]));
 	}
 
-	LangBoard board(0,rules,89);
-	
-	//render(Screen* scr, int32_t partStartX, int32_t partStartY, int32_t renderStartX, int32_t renderStartY, int32_t height, int32_t width)
-	int topX=0;
-	int topY=0;
-	unsigned long step=1;
-	unsigned long move=1;
+	if (rules.size()==0){
+		cout << "You need to provide rules as arguments! \nexample: langton 1 1 -1 -1 -1 1 -1 -1 -1 1 1 1\n";
+		return 0;
+	}
+
+	Terminal terminal(background);
+	LangBoard board(0,rules);
 
 	while (true) {
 		board.render(&terminal.screen,topX,topY,0,0,terminal.screen.rows,terminal.screen.cols);
