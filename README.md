@@ -16,14 +16,14 @@ rm /usr/local/bin/langton
 ## usage
 run langton's ant by providing rules as arguments!  
 eg: 
-	- `langton RRLLLRLLLRRR`
+  - `langton RRLLLRLLLRRR`
     - `langton LRRRRRLLR`
 controls:
-	- q: quit
-	- w,a,s,d: move
-	- f: move twice as slowly
-	- g: move twice as fast
-	- c: step the ant
-	- e: step half as much
-	- r: step twice as much
+  - q: quit
+  - w,a,s,d: move
+  - f: move twice as slowly
+  - g: move twice as fast
+  - c: step the ant
+  - e: step half as much
+  - r: step twice as much
 ## screenshots
