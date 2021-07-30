@@ -17,7 +17,8 @@ rm /usr/local/bin/langton
 run langton's ant by providing rules as arguments!  
 eg: 
   - `langton RRLLLRLLLRRR`
-    - `langton LRRRRRLLR`
+  - `langton LRRRRRLLR`  
+
 controls:
   - q: quit
   - w,a,s,d: move
