@@ -1,8 +1,8 @@
-#include "../nncurses/nncurses.hpp"
+#include "nncurses/nncurses.hpp"
 #include <unordered_map>
 #include <vector>
 
-using nc::Texture, nc::Effect, nc::Col256, nc::Style, nc::Terminal, nc::Screen, nc::TextLine, nc::TimeTracker, nc::Renderable, nc::TimeLimiter,nc::cinchr,nc::gettermsize;
+using nc::Texture, nc::Effect, nc::Col256, nc::Style, nc::Terminal, nc::Screen, nc::TranspText, nc::TimeTracker, nc::Renderable, nc::TimeLimiter,nc::cinchr,nc::gettermsize,nc::blocks;
 using std::unordered_map, std::map, std::cout, std::pair, std::string, std::vector, std::stoi, std::to_string;
 
 class InfGrid{
@@ -34,103 +34,16 @@ public:
 		hash= (hash<<32)+y;
 		grid[hash]=val;
 	}
-};
 
-template<class T>
-T toroid(T a, T b) {
-	int result = a % b;
-	return result >= 0 ? result : result + b;
-}
+	int32_t* atptr(int32_t x, int32_t y){
+		int64_t hash=x;
+		hash= (hash<<32)+y;
 
-short* black=new short(256);
-short* white=new short(252);
-
-uint8_t* noeffectint=new uint8_t(0);
-Effect* noeffect=new Effect(noeffectint);
-
-Col256* backgroundCol=new Col256(white,black);
-Style* backgroundStl=new Style(backgroundCol,noeffect);
-Texture* background=new Texture(new string(" "),backgroundStl);
-
-class LangBoard{
-public:
-	int32_t antX,antY;
-	InfGrid grid;
-	int8_t direction; //0-up 1-right 2-down 3-left
-	string* character=&nc::AscBlok::block[0b1100];
-	uint64_t steps=0;
-
-	vector< int8_t > rules;
-	vector< Texture* > chars;
-
-	LangBoard(int8_t startDir,vector< int8_t > rules): antX(0), antY(0), direction(startDir), rules(rules), grid(0){}
-
-	void step(){
-		steps++;
-		int ruleId=grid.at(antX,antY);
-		uint8_t rule=rules[ruleId];
-		grid.assign(antX,antY, (ruleId+1)%rules.size() );
-		direction=toroid(direction+rule,4);
-		switch (direction){
-			case 0:
-				antY--;
-				// cout << "y--\n";
-				break;
-			case 1:
-				antX++;
-				// cout << "x++\n";
-				break;
-			case 2:
-				antY++;
-				// cout << "y++\n";
-				break;
-			case 3:
-				antX--;
-				// cout << "x--\n";
-				break;
-		};
-		// cout << "X: " << antX << " Y: " << antY << " assigned: "<< (ruleId+1)%rules.size() << " direction: " << (int)direction << "\n";
-	}
-
-	void render(Screen* scr, int32_t partStartX, int32_t partStartY, int32_t renderStartX, int32_t renderStartY, int32_t height, int32_t width){
-		for (int n=0;n<chars.size();n++){
-			Texture* texture=chars[n];
-			delete texture->style->color->fg;
-			delete texture->style->color->bg;
-			delete texture->style->color;
-			delete texture->style;
-			delete texture;
-		}
-		chars.erase(chars.begin(),chars.end());
-
-		Texture* texture;
-		for (int row=0;row<height;row++){
-			for (int col=0;col<width;col++){
-				texture=new Texture(
-					character,
-					new Style(
-						new Col256( //fg top bg bottom
-							new short(
-								grid.at(partStartX+col,partStartY+(row*2))
-							),
-							new short(
-								grid.at(partStartX+col,partStartY+(row*2)+1)
-							)
-						),
-						noeffect
-					)
-				);
-				scr->screen[renderStartY+row][renderStartX+col]=texture;
-				chars.push_back(texture);
-			}
-		}
+		return &grid[hash];
 	}
 };
 
-string statsStr="";
-int statsX=0;
-int statsY=0;
-TextLine stats(&statsStr, white, noeffect, &statsX, &statsY);
+TranspText stats("",Effect(0), 252);
 
 long topX=0;
 long topY=0;
@@ -138,40 +51,103 @@ long topY=0;
 unsigned long step=1;
 unsigned long move=1;
 
-int main(int argc, char *argv[]){ //1 1 -1 -1 -1 1 -1 -1 -1 1 1 1 nice
-	std::vector<std::string> arguments(argv + 1, argv + argc);
+unordered_map<char,int8_t> ruleMap={
+	{'R',1}, //right
+	{'L',-1}, //left
+	{'C',0}, //continue straight
+	{'U',2} //make a u turn
+};
 
-	if ( arguments[0]=="-h" ){
-		cout << "run langton's ant by providing rules as arguments!\n"
-				"eg: langton 1 1 -1 -1 -1 1 -1 -1 -1 1 1 1\n"
-				"controls:\n"
-				"    q: quit\n"
-				"    w,a,s,d: move move tiles in a direction\n"
-				"    f: divide move by 2\n"
-				"    g: multiply move by 2\n"
-				"    c: step step steps\n"
-				"    e: divide step by 2\n"
-				"    r: multiply step by 2\n";
-		return 0;
-	}
+class LangBoard{
+public:
+	int32_t antX,antY;
+	InfGrid grid;
+	uint8_t direction; //0-up 1-right 2-down 3-left
+	string character=blocks[0b1100];
+	uint64_t steps=0;
 
 	vector< int8_t > rules;
 
-	for (int i=0;i<arguments.size();i++){
-		rules.push_back(stoi(arguments[i]));
+	LangBoard(int8_t startDir,vector< int8_t > rules): antX(0), antY(0), direction(startDir), rules(rules), grid(0){}
+
+	void step(){
+		steps++;
+		int* ruleIdPtr=grid.atptr(antX,antY);
+		uint8_t rule=rules[ *ruleIdPtr ];
+		*ruleIdPtr = ( *ruleIdPtr+1 )%rules.size();
+
+		direction=(direction+rule)%4; //its a uint
+
+		if (direction==0){
+			antY--;
+		}else if (direction==1){
+			antX++;
+		}else if (direction==2){
+			antY++;
+		}else{
+			antX--;
+		}
 	}
 
-	if (rules.size()==0){
-		cout << "You need to provide rules as arguments! \nexample: langton 1 1 -1 -1 -1 1 -1 -1 -1 1 1 1\n";
+	void render(Screen* scr, int32_t partStartX, int32_t partStartY, int32_t renderStartX, int32_t renderStartY, int32_t height, int32_t width){
+		for (int row=0;row<height;row++){
+			for (int col=0;col<width;col++){
+				scr->screen[renderStartY+row][renderStartX+col]=Texture(
+					character,
+					Style(
+						grid.at(partStartX+col,partStartY+(row*2)),
+						grid.at(partStartX+col,partStartY+(row*2)+1),
+						0
+					)
+				);
+			}
+		}
+	}
+};
+
+int main(int argc, char *argv[]){
+	vector<string> arguments(argv, argv + argc);
+	if (arguments.size()==1){
+		cout << "You need to provide rules as arguments! \n"
+				"examples: langton RRLLLRLLLRRR\n"
+				"          langton LRRRRRLLR\n"
+				"          langton -h\n";
 		return 0;
 	}
 
-	Terminal terminal(background);
+	if ( arguments[1]=="-h" ){
+		cout << "run langton's ant by providing rules as arguments!\n"
+				"eg: langton RRLLLRLLLRRR\n"
+				"    langton LRRRRRLLR\n"
+				"controls:\n"
+				"    q: quit\n"
+				"    w,a,s,d: move\n"
+				"    f: move twice as slowly\n"
+				"    g: move twice as fast\n"
+				"    c: step the ant\n"
+				"    e: step half as much\n"
+				"    r: step twice as much\n";
+		return 0;
+	}
+
+	vector< int8_t > rules={};
+
+	for (int i=0;i<arguments[1].size();i++){
+		rules.push_back( ruleMap.at(arguments[1].at(i)) );
+	}
+
+	Terminal terminal(
+		Texture(" ",Style(252,256,0))
+	);
+
+	topX= -(terminal.screen.cols/2);
+	topY= -(terminal.screen.rows);
+
 	LangBoard board(0,rules);
 
 	while (true) {
 		board.render(&terminal.screen,topX,topY,0,0,terminal.screen.rows,terminal.screen.cols);
-		statsStr="step count: "+to_string(board.steps)+
+		stats.text="step count: "+to_string(board.steps)+
 				 " step size: "+to_string(step)+
 				 " x: "+to_string(board.antX)+
 				 " y: "+to_string(board.antY)+
