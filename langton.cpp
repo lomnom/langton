@@ -1,47 +1,10 @@
 #include "nncurses/nncurses.hpp"
+#include "Board.hpp"
 #include <unordered_map>
 #include <vector>
 
-using nc::Texture, nc::Effect, nc::Col256, nc::Style, nc::Terminal, nc::Screen, nc::TranspText, nc::TimeTracker, nc::Renderable, nc::TimeLimiter,nc::cinchr,nc::gettermsize,nc::blocks;
-using std::unordered_map, std::map, std::cout, std::pair, std::string, std::vector, std::stoi, std::to_string;
-
-class InfGrid{
-public:
-	unordered_map<int64_t, int32_t> grid;
-	int32_t defvalue;
-	InfGrid(int32_t defvalue):defvalue(defvalue){};
-
-	void alloc(int32_t x, int32_t y){
-		int64_t hash=x;
-		hash= (hash<<32)+y;
-		grid[hash]=defvalue;
-	}
-
-	void dealloc(int32_t x, int32_t y){
-		int64_t hash=x;
-		hash= (hash<<32)+y;
-		grid.erase(hash);
-	}
-
-	int32_t at(int32_t x, int32_t y){ // s p e e d
-		int64_t hash=x;
-		hash= (hash<<32)+y;
-		return grid.insert( {hash,defvalue} ).first->second;
-	}
-
-	void assign(int32_t x, int32_t y, int32_t val){ // s p e e d
-		int64_t hash=x;
-		hash= (hash<<32)+y;
-		grid[hash]=val;
-	}
-
-	int32_t* atptr(int32_t x, int32_t y){
-		int64_t hash=x;
-		hash= (hash<<32)+y;
-
-		return &grid[hash];
-	}
-};
+using nc::Texture, nc::Effect, nc::Col256, nc::Style, nc::Terminal, nc::TranspText, nc::cinchr,nc::gettermsize;
+using std::cout, std::string, std::vector, std::to_string;
 
 TranspText stats("",Effect(0), 252);
 
@@ -50,60 +13,6 @@ long topY=0;
 
 unsigned long step=1;
 unsigned long move=1;
-
-unordered_map<char,int8_t> ruleMap={
-	{'R',1}, //right
-	{'L',-1}, //left
-	{'C',0}, //continue straight
-	{'U',2} //make a u turn
-};
-
-class LangBoard{
-public:
-	int32_t antX,antY;
-	InfGrid grid;
-	uint8_t direction; //0-up 1-right 2-down 3-left
-	string character=blocks[0b1100];
-	uint64_t steps=0;
-
-	vector< int8_t > rules;
-
-	LangBoard(int8_t startDir,vector< int8_t > rules): antX(0), antY(0), direction(startDir), rules(rules), grid(0){}
-
-	void step(){
-		steps++;
-		int* ruleIdPtr=grid.atptr(antX,antY);
-		uint8_t rule=rules[ *ruleIdPtr ];
-		*ruleIdPtr = ( *ruleIdPtr+1 )%rules.size();
-
-		direction=(direction+rule)%4; //its a uint
-
-		if (direction==0){
-			antY--;
-		}else if (direction==1){
-			antX++;
-		}else if (direction==2){
-			antY++;
-		}else{
-			antX--;
-		}
-	}
-
-	void render(Screen* scr, int32_t partStartX, int32_t partStartY, int32_t renderStartX, int32_t renderStartY, int32_t height, int32_t width){
-		for (int row=0;row<height;row++){
-			for (int col=0;col<width;col++){
-				scr->screen[renderStartY+row][renderStartX+col]=Texture(
-					character,
-					Style(
-						grid.at(partStartX+col,partStartY+(row*2)),
-						grid.at(partStartX+col,partStartY+(row*2)+1),
-						0
-					)
-				);
-			}
-		}
-	}
-};
 
 int main(int argc, char *argv[]){
 	vector<string> arguments(argv, argv + argc);
