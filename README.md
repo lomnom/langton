@@ -15,11 +15,12 @@ rm /usr/local/bin/langton
 ```
 ## usage
 run langton's ant by providing rules as arguments!  
-eg: 
+
+### running
   - `langton RRLLLRLLLRRR`
   - `langton LRRRRRLLR`  
 
-controls:
+### controlling
   - q: quit
   - w,a,s,d: move
   - f: move twice as slowly
@@ -27,4 +28,5 @@ controls:
   - c: step the ant
   - e: step half as much
   - r: step twice as much
+
 ## screenshots
