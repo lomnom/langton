@@ -30,5 +30,5 @@ run langton's ant by providing rules as arguments!
   - r: step twice as much
 
 ## screenshot
-[screenshot](screenshot.png)  
+![screenshot](screenshot.png)  
 1.6 billion steps stimulated in under 3 seconds.
