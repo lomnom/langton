@@ -1,5 +1,5 @@
 # langton, a *blazingly fast* CLI langton's ant stimulator written in c++
-## installation (unix-like systems)
+## Installation (unix-like systems)
 ```bash
 git clone https://github.com/lomnom/langton
 cd langton
@@ -9,18 +9,18 @@ cp langton /usr/local/bin/langton
 cd ..
 rm -rf langton
 ```
-## uninstallation (unix-like systems)
+## Uninstallation (unix-like systems)
 ```bash
 rm /usr/local/bin/langton
 ```
-## usage
+## Usage
 run langton's ant by providing rules as arguments!  
 
-### running
+### Running
   - `langton RRLLLRLLLRRR`
   - `langton LRRRRRLLR`  
 
-### controlling
+### Controlling
   - q: quit
   - w,a,s,d: move
   - f: move twice as slowly
@@ -29,6 +29,13 @@ run langton's ant by providing rules as arguments!
   - e: step half as much
   - r: step twice as much
 
-## screenshot
-![screenshot](screenshot.png)  
-1.6 billion steps stimulated in under 3 seconds.
+## Screenshot
+![screenshot1](screenshot.png)  
+16 million steps of LRRRRRLLR stimulated in under 3 seconds.
+![screenshot2](screenshot2.png)  
+RRLLLRLLLRRR
+
+## TODO
+Find a way to use less memory, memory usage after 67 million steps of RRLLLRLLLRRR is 324 mb.  
+Find a way to step faster.  
+Increase contrast of info text
