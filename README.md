@@ -29,4 +29,6 @@ run langton's ant by providing rules as arguments!
   - e: step half as much
   - r: step twice as much
 
-## screenshots
+## screenshot
+[screenshot](screenshot.png)  
+1.6 billion steps stimulated in under 3 seconds.
