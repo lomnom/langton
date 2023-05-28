@@ -5,7 +5,7 @@ git clone https://github.com/lomnom/langton
 cd langton
 git clone https://github.com/lomnom/nncurses
 g++ -std=c++2a -O3 langton.cpp -o langton
-cp langton /usr/local/bin/langton
+sudo cp langton /usr/local/bin/langton
 cd ..
 rm -rf langton
 ```
